@@ -98,6 +98,38 @@ fn part1(files: deque.Deque(#(Int, Int)), spaces: List(Int)) {
   #(total + id * len * { idx * 2 + len - 1 } / 2, idx + len)
 }
 
+fn fill_space2(
+  segments: List(#(Int, Int)),
+  files: deque.Deque(#(Int, Int)),
+  spaces: List(Int),
+) {
+  case deque.pop_back(files) {
+    Error(_) -> list.reverse(segments)
+    Ok(#(#(id, len), files)) -> {
+      let insert_idx =
+        list.fold_until(spaces, 0, fn(i, space) {
+          case space >= len {
+            // Add after (i+1)th file, i.e. in space i
+            True -> list.Stop(i + 1)
+            // Should be the end of the list, i.e. files.length
+            _ -> list.Continue(i + 1)
+          }
+        })
+      let #(pre, post) = list.split(segments, insert_idx)
+      let assert #(pre_s, [space, ..post_s]) =
+        list.split(spaces, insert_idx - 1)
+      fill_space2(
+        list.flatten([pre, [#(id, len)], post]),
+        files,
+        list.flatten([pre_s, [0, space], post_s]),
+      )
+    }
+  }
+}
+
 fn part2(files: deque.Deque(#(Int, Int)), spaces: List(Int)) {
-  Nil
+  let assert Ok(#(file, files)) = deque.pop_front(files)
+  let compact = fill_space2([file], files, spaces)
+  use #(total, idx), #(id, len) <- list.fold(compact, #(0, 0))
+  #(total + id * len * { idx * 2 + len - 1 } / 2, idx + len)
 }
